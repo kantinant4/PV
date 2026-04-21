@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loss Ratio – Political Violence · Cyber Chibi Edition</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=IBM+Plex+Mono:wght@400;600&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0B0B1E;
+  --surface:  #13133A;
+  --surface2: #1C1C4E;
+  --surface3: #272760;
+  --navy:     #1A1A45;
+  --cyan:     #00F5FF;
+  --cyan-dim: rgba(0,245,255,0.15);
+  --pink:     #FF4DA6;
+  --pink-dim: rgba(255,77,166,0.15);
+  --purple:   #B060FF;
+  --yellow:   #FFD700;
+  --green:    #39FF6A;
+  --green-dim:rgba(57,255,106,0.12);
+  --orange:   #FF9F43;
+  --text:     #EEF0FF;
+  --text-muted:#8890CC;
+  --border:   rgba(0,245,255,0.18);
+  --border-pink:rgba(255,77,166,0.35);
+  --glow-c:   0 0 18px rgba(0,245,255,0.25);
+  --glow-p:   0 0 18px rgba(255,77,166,0.25);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ── ANIMATED BG ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 10% 10%, rgba(0,245,255,0.06) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 50% at 90% 90%, rgba(255,77,166,0.06) 0%,transparent 70%),
+    radial-gradient(ellipse 30% 30% at 50% 0%, rgba(176,96,255,0.05) 0%,transparent 60%);
+  pointer-events:none;
+}
+
+/* ── HEADER ── */
+.header{
+  position:relative;z-index:10;
+  background:linear-gradient(120deg,#0D0D2E 0%,#1A1040 50%,#0D1F3A 100%);
+  border-bottom:2px solid transparent;
+  border-image:linear-gradient(90deg,var(--cyan),var(--purple),var(--pink)) 1;
+  padding:22px 40px 18px;
+  display:flex;align-items:center;gap:20px;
+  box-shadow:0 4px 30px rgba(0,0,0,0.5),0 1px 0 rgba(0,245,255,0.2);
+}
+.mascot{
+  flex-shrink:0;width:76px;height:76px;border-radius:22px;
+  background:linear-gradient(135deg,var(--surface2),var(--surface3));
+  border:2px solid var(--cyan);
+  box-shadow:var(--glow-c),inset 0 0 20px rgba(0,245,255,0.1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;animation:float 3s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+
+.header-text{flex:1;}
+.header-tag{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:3px;
+  color:var(--cyan);text-transform:uppercase;margin-bottom:6px;
+  text-shadow:0 0 8px rgba(0,245,255,0.6);
+}
+.header-title{font-family:'Nunito',sans-serif;font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1.1;}
+.header-title .hl{color:var(--pink);text-shadow:0 0 12px rgba(255,77,166,0.5);}
+.header-sub{font-size:12px;color:var(--text-muted);margin-top:5px;}
+
+.header-kpis{display:flex;gap:16px;margin-left:auto;}
+.hkpi{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:12px 18px;text-align:center;min-width:90px;
+  box-shadow:var(--glow-c);
+}
+.hkpi.red{border-color:var(--border-pink);box-shadow:var(--glow-p);}
+.hkpi-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:var(--cyan);}
+.hkpi.red .hkpi-val{color:var(--pink);}
+.hkpi-lbl{font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
+
+/* ── TABS ── */
+.tabs{
+  position:relative;z-index:5;
+  display:flex;gap:6px;padding:18px 40px 0;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+.tab{
+  padding:10px 22px;font-size:13px;font-weight:700;
+  border:1px solid transparent;border-bottom:none;
+  border-radius:12px 12px 0 0;
+  cursor:pointer;background:transparent;color:var(--text-muted);
+  transition:all .25s;font-family:'Nunito',sans-serif;
+  letter-spacing:.3px;
+}
+.tab:hover{color:var(--cyan);background:var(--surface2);}
+.tab.active{
+  background:var(--surface2);color:var(--cyan);
+  border-color:var(--border);border-bottom-color:var(--surface2);
+  text-shadow:0 0 8px rgba(0,245,255,0.4);
+}
+
+/* ── PANELS ── */
+.content{position:relative;z-index:1;padding:28px 40px 50px;}
+.panel{display:none;animation:panelIn .3s ease;}
+.panel.active{display:block;}
+@keyframes panelIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;}
+.kpi{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:18px 16px;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;cursor:default;
+  box-shadow:0 4px 20px rgba(0,0,0,0.3);
+}
+.kpi:hover{transform:translateY(-4px);box-shadow:var(--glow-c),0 8px 30px rgba(0,0,0,0.4);}
+.kpi.danger{border-color:var(--border-pink);box-shadow:0 4px 20px rgba(255,77,166,0.15);}
+.kpi.danger:hover{box-shadow:var(--glow-p),0 8px 30px rgba(0,0,0,0.4);}
+.kpi.warn{border-color:rgba(255,159,67,0.4);}
+.kpi::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--cyan),var(--purple));
+  border-radius:18px 18px 0 0;
+}
+.kpi.danger::after{background:linear-gradient(90deg,var(--pink),var(--purple));}
+.kpi.warn::after{background:linear-gradient(90deg,var(--orange),var(--yellow));}
+.kpi-icon{font-size:22px;margin-bottom:8px;display:block;}
+.kpi-lbl{font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.kpi-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--cyan);line-height:1;}
+.kpi.danger .kpi-val{color:var(--pink);}
+.kpi.warn .kpi-val{color:var(--orange);}
+.kpi-sub{font-size:10px;color:var(--text-muted);margin-top:5px;}
+
+/* ── CHART CARD ── */
+.chart-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:22px 24px;margin-bottom:20px;
+  box-shadow:0 4px 24px rgba(0,0,0,0.25);
+}
+.chart-card.pink{border-color:var(--border-pink);}
+.card-head{margin-bottom:14px;}
+.card-title{font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;color:var(--cyan);}
+.chart-card.pink .card-title{color:var(--pink);}
+.card-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
+
+/* ── 2-COL ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+
+/* ── LOCATION CARDS ── */
+.loc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+.loc-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:16px;transition:all .2s;cursor:pointer;
+  position:relative;overflow:hidden;
+}
+.loc-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at top right,rgba(0,245,255,0.05),transparent 60%);
+}
+.loc-card:hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:var(--glow-c);}
+.loc-card.danger{border-color:var(--border-pink);background:rgba(255,77,166,0.04);}
+.loc-card.danger::before{background:radial-gradient(circle at top right,rgba(255,77,166,0.08),transparent 60%);}
+.loc-card.danger:hover{box-shadow:var(--glow-p);}
+.loc-card.warn{border-color:rgba(255,159,67,0.4);background:rgba(255,159,67,0.03);}
+.loc-badge{
+  display:inline-block;padding:2px 10px;border-radius:20px;
+  font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;
+}
+.loc-badge.danger{background:rgba(255,77,166,0.2);color:var(--pink);}
+.loc-badge.warn{background:rgba(255,159,67,0.2);color:var(--orange);}
+.loc-badge.ok{background:rgba(0,245,255,0.12);color:var(--cyan);}
+.loc-name{font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px;}
+.loc-card.danger .loc-name{color:var(--pink);}
+.loc-card.warn .loc-name{color:var(--orange);}
+.loc-lr{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;line-height:1;margin-bottom:6px;}
+.loc-card.danger .loc-lr{color:var(--pink);text-shadow:0 0 10px rgba(255,77,166,0.4);}
+.loc-card.warn .loc-lr{color:var(--orange);}
+.loc-meta{font-size:10px;color:var(--text-muted);}
+
+/* ── TABLE ── */
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table th{
+  background:var(--surface2);color:var(--cyan);
+  padding:12px 14px;text-align:right;font-weight:700;
+  font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+}
+.data-table th:first-child{text-align:left;}
+.data-table td{
+  padding:10px 14px;text-align:right;border-bottom:1px solid rgba(0,245,255,0.05);
+  font-family:'IBM Plex Mono',monospace;
+  transition:background .15s;
+}
+.data-table td:first-child{text-align:left;font-family:'Sarabun',sans-serif;font-weight:600;}
+.data-table tr:hover td{background:rgba(0,245,255,0.03);}
+.data-table tr.summary td{color:var(--yellow);font-weight:600;background:rgba(255,215,0,0.04);}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;}
+.badge.danger{background:rgba(255,77,166,0.2);color:var(--pink);}
+.badge.warn{background:rgba(255,159,67,0.2);color:var(--orange);}
+.badge.ok{background:rgba(57,255,106,0.12);color:var(--green);}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
+
+/* ── ALERT BANNER ── */
+.alert-banner{
+  background:linear-gradient(90deg,rgba(255,77,166,0.12),rgba(176,96,255,0.08));
+  border:1px solid var(--border-pink);border-radius:14px;
+  padding:12px 20px;margin-bottom:20px;
+  display:flex;align-items:center;gap:12px;
+  font-size:13px;font-weight:600;
+}
+.alert-icon{font-size:20px;}
+.alert-text{color:var(--pink);}
+.alert-text span{color:var(--text);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="mascot">🛡️</div>
+  <div class="header-text">
+    <div class="header-tag">✦ Cyber Chibi Analytics · Insurance Intelligence</div>
+    <div class="header-title">Loss Ratio — <span class="hl">Political Violence</span></div>
+    <div class="header-sub">Consolidated Portfolio Analysis · FY 2021/2022–2025/2026 · Unit: THB</div>
+  </div>
+  <div class="header-kpis">
+    <div class="hkpi"><div class="hkpi-val">30.7B</div><div class="hkpi-lbl">Sum Insured</div></div>
+    <div class="hkpi red"><div class="hkpi-val">401%</div><div class="hkpi-lbl">LR · 5Y Avg</div></div>
+    <div class="hkpi red"><div class="hkpi-val">267%</div><div class="hkpi-lbl">LR · 2Y Avg</div></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('overview',this)">📊 Overview</button>
+  <button class="tab" onclick="switchTab('trend',this)">📈 Trend & Historical</button>
+  <button class="tab" onclick="switchTab('location',this)">📍 By Location</button>
+  <button class="tab" onclick="switchTab('data',this)">🗂 Data Table</button>
+</div>
+
+<div class="content">
+
+<!-- ════════ OVERVIEW ════════ -->
+<div id="panel-overview" class="panel active">
+  <div class="kpi-strip">
+    <div class="kpi"><span class="kpi-icon">🏦</span><div class="kpi-lbl">Sum Insured (5Y)</div><div class="kpi-val">30.7B</div><div class="kpi-sub">THB cumulative</div></div>
+    <div class="kpi"><span class="kpi-icon">💰</span><div class="kpi-lbl">Total Premium (5Y)</div><div class="kpi-val">21.8M</div><div class="kpi-sub">THB cumulative</div></div>
+    <div class="kpi danger"><span class="kpi-icon">🚨</span><div class="kpi-lbl">Total Claim (5Y)</div><div class="kpi-val">87.3M</div><div class="kpi-sub">THB cumulative</div></div>
+    <div class="kpi danger"><span class="kpi-icon">⚠️</span><div class="kpi-lbl">Loss Ratio (5Y)</div><div class="kpi-val">401%</div><div class="kpi-sub">5-year average</div></div>
+    <div class="kpi warn"><span class="kpi-icon">📉</span><div class="kpi-lbl">Loss Ratio (2Y)</div><div class="kpi-val">267%</div><div class="kpi-sub">2-year average</div></div>
+  </div>
+
+  <div class="alert-banner">
+    <span class="alert-icon">🔴</span>
+    <div class="alert-text">Critical: <span>POW-PV (2,105% avg LR)</span> และ <span>RTB-PV (1,679% avg LR)</span> มี Loss Ratio สูงกว่าปกติอย่างมาก — ต้องการการทบทวนเบี้ยประกันและเงื่อนไขความคุ้มครอง</div>
+  </div>
+
+  <div class="chart-card">
+    <div class="card-head">
+      <div class="card-title">Consolidated Annual Performance — Combo Chart</div>
+      <div class="card-sub">Bar: Sum Insured (B THB) · Annual Premium (M THB) · Claim (M THB) &nbsp;|&nbsp; Line: Loss Ratio (%) · Premium Rate (%)</div>
+    </div>
+    <div id="chart-main" style="height:440px;"></div>
+  </div>
+</div>
+
+<!-- ════════ TREND ════════ -->
+<div id="panel-trend" class="panel">
+  <div class="chart-card">
+    <div class="card-head">
+      <div class="card-title">Loss Ratio Trend + Historical Benchmarks</div>
+      <div class="card-sub">Annual LR vs 2-Year Avg (267%) & 5-Year Avg (401%) Reference Lines</div>
+    </div>
+    <div id="chart-trend" style="height:380px;"></div>
+  </div>
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="card-head">
+        <div class="card-title">Premium Rate Trend (%)</div>
+        <div class="card-sub">Annual vs 2Y/5Y historical benchmarks</div>
+      </div>
+      <div id="chart-premrate" style="height:300px;"></div>
+    </div>
+    <div class="chart-card pink">
+      <div class="card-head">
+        <div class="card-title">Claim vs Premium (M THB)</div>
+        <div class="card-sub">Yearly claim amount vs premium collected</div>
+      </div>
+      <div id="chart-claimvsprem" style="height:300px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ LOCATION ════════ -->
+<div id="panel-location" class="panel">
+  <div class="loc-grid" id="loc-cards"></div>
+
+  <div class="chart-card pink">
+    <div class="card-head">
+      <div class="card-title">Loss Ratio by Location — 3-Year Average</div>
+      <div class="card-sub">Sorted by severity — เส้นสีชมพูคือระดับ Critical (>500%)</div>
+    </div>
+    <div id="chart-loc-lr" style="height:360px;"></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="card-head">
+      <div class="card-title">Small Multiples — Loss Ratio by Year per Location</div>
+      <div class="card-sub">สีชมพู = Critical · สีส้ม = High · สีน้ำเงิน = Normal</div>
+    </div>
+    <div id="chart-small-multiples" style="height:520px;"></div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="card-head"><div class="card-title">Sum Insured by Location</div></div>
+      <div id="chart-loc-si" style="height:280px;"></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-head"><div class="card-title">Premium Rate by Location (%)</div></div>
+      <div id="chart-loc-pr" style="height:280px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ DATA TABLE ════════ -->
+<div id="panel-data" class="panel">
+  <div class="chart-card">
+    <div class="card-head"><div class="card-title">Consolidated Annual Data</div></div>
+    <table class="data-table">
+      <thead><tr><th>Year</th><th>Sum Insured</th><th>Premium (M THB)</th><th>Claim (M THB)</th><th>Loss Ratio</th><th>Premium Rate</th><th>Status</th></tr></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+  <div class="chart-card" style="margin-top:20px;">
+    <div class="card-head"><div class="card-title">By Location — 3-Year Average Summary</div></div>
+    <table class="data-table">
+      <thead><tr><th>Entity</th><th>Avg Sum Insured</th><th>Avg Premium/Yr</th><th>Avg Rate</th><th>Total Claim</th><th>Avg Loss Ratio</th><th>Risk</th></tr></thead>
+      <tbody id="table-loc-body"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────
+const YEARS    = ['2021/2022','2022/2023','2023/2024','2024/2025','2025/2026','ย้อนหลัง 2 ปี','ย้อนหลัง 5 ปี'];
+const ANN_YRS  = ['2021/2022','2022/2023','2023/2024','2024/2025','2025/2026'];
+
+const D = {
+  si:  [3,5,5,9,9,17,26],
+  ap:  [1,2,2,14,3,18,21],
+  cl:  [0,0,41,0,47,47,93],
+  lr:  [0,0,2389,0,1460,267,401],
+  pr:  [0.03,0.04,0.03,0.17,0.04,0.10,0.08],
+};
+
+const LOCS = [
+  {n:'MCE-PV',  si:9985428546, prem:5719869, rate:0.0573, claim:0,         lr:0,      risk:'ok'},
+  {n:'POW-PV',  si:1803205303, prem:2219338, rate:0.1231, claim:46722365,  lr:2105.2, risk:'danger'},
+  {n:'TPCH1-PV',si:1666824078, prem:1278213, rate:null,   claim:0,         lr:0,      risk:'ok'},
+  {n:'TPCH2-PV',si:1650378437, prem:1278213, rate:null,   claim:0,         lr:0,      risk:'ok'},
+  {n:'TPCH5-PV',si:1366172344, prem:991799,  rate:null,   claim:0,         lr:0,      risk:'ok'},
+  {n:'PBB-PV',  si:820888291,  prem:1469914, rate:null,   claim:0,         lr:0,      risk:'ok'},
+  {n:'PBM-PV',  si:801386165,  prem:1469914, rate:null,   claim:0,         lr:0,      risk:'ok'},
+  {n:'RTB-PV',  si:2238915288, prem:2417707, rate:0.1080, claim:40608924,  lr:1679.6, risk:'warn'},
+  {n:'BGP-PV',  si:2214306292, prem:2371032, rate:0.1071, claim:0,         lr:0,      risk:'ok'},
+];
+
+const LOC_YLR = {
+  'MCE-PV':   [0,0,0,0,0],
+  'POW-PV':   [null,0,0,0,14253],
+  'TPCH1-PV': [null,null,null,0,0],
+  'TPCH2-PV': [null,null,null,0,0],
+  'TPCH5-PV': [null,null,null,0,0],
+  'PBB-PV':   [null,null,null,0,0],
+  'PBM-PV':   [null,null,null,0,0],
+  'RTB-PV':   [null,0,9555,0,0],
+  'BGP-PV':   [0,0,0,0,0],
+};
+
+// ─── COLORS ───────────────────────────────────────────────────────────────
+const C = {
+  cyan:'#00F5FF', pink:'#FF4DA6', purple:'#B060FF',
+  orange:'#FF9F43', yellow:'#FFD700', green:'#39FF6A',
+  navy:'rgba(39,39,96,0.8)', text:'#EEF0FF', muted:'#8890CC',
+  bg:'rgba(0,0,0,0)', surface:'rgba(19,19,58,0.9)',
+};
+
+const BASE_LAYOUT = (extra={}) => ({
+  paper_bgcolor: C.bg, plot_bgcolor: C.bg,
+  font:{family:'Sarabun, sans-serif', color:C.text, size:11},
+  xaxis:{gridcolor:'rgba(0,245,255,0.05)', linecolor:'rgba(0,245,255,0.15)', tickfont:{size:10,color:C.muted}, zeroline:false},
+  yaxis:{gridcolor:'rgba(0,245,255,0.07)', linecolor:'rgba(0,0,0,0)', tickfont:{size:10,color:C.muted}, zeroline:false},
+  legend:{bgcolor:'rgba(19,19,58,0.85)', bordercolor:'rgba(0,245,255,0.2)', borderwidth:1, font:{size:11,color:C.text}},
+  margin:{t:20,b:45,l:60,r:70},
+  hoverlabel:{bgcolor:'#1C1C4E', bordercolor:C.cyan, font:{family:'IBM Plex Mono, monospace', size:12, color:'#fff'}},
+  ...extra
+});
+
+const CFG = {responsive:true, displayModeBar:false};
+
+// ─── CHART: MAIN COMBO ────────────────────────────────────────────────────
+function drawMain(){
+  const clColors = D.cl.map(v=> v>0 ? 'rgba(255,77,166,0.8)' : 'rgba(39,39,96,0.4)');
+
+  Plotly.newPlot('chart-main',[
+    {name:'Sum Insured (B THB)', type:'bar', x:YEARS, y:D.si, offsetgroup:1,
+     marker:{color:'rgba(44,44,120,0.75)', line:{color:'rgba(0,245,255,0.25)',width:1}},
+     hovertemplate:'<b>%{x}</b><br>Sum Insured: %{y}B THB<extra></extra>'},
+
+    {name:'Annual Premium (M THB)', type:'bar', x:YEARS, y:D.ap, offsetgroup:2,
+     marker:{color:'rgba(0,245,255,0.5)', line:{color:C.cyan,width:1}},
+     hovertemplate:'<b>%{x}</b><br>Premium: %{y}M THB<extra></extra>'},
+
+    {name:'Claim (M THB)', type:'bar', x:YEARS, y:D.cl, offsetgroup:3,
+     marker:{color:clColors, line:{color:'rgba(255,77,166,0.4)',width:1}},
+     hovertemplate:'<b>%{x}</b><br>Claim: %{y}M THB<extra></extra>'},
+
+    {name:'Loss Ratio (%)', type:'scatter', mode:'lines+markers+text',
+     x:YEARS, y:D.lr, yaxis:'y2',
+     line:{color:C.pink, width:3, dash:'dot'},
+     marker:{size:10, color:D.lr.map(v=>v>500?C.pink:'rgba(255,77,166,0.5)'), symbol:'diamond', line:{color:C.pink,width:2}},
+     text:D.lr.map(v=>v>0?v+'%':''), textposition:'top center',
+     textfont:{color:C.pink, size:10, family:'IBM Plex Mono'},
+     hovertemplate:'<b>%{x}</b><br>Loss Ratio: %{y}%<extra></extra>'},
+
+    {name:'Premium Rate (%)', type:'scatter', mode:'lines+markers+text',
+     x:YEARS, y:D.pr, yaxis:'y2',
+     line:{color:C.cyan, width:2},
+     marker:{size:7, color:C.cyan},
+     text:D.pr.map(v=>v.toFixed(2)+'%'), textposition:'bottom center',
+     textfont:{color:'rgba(0,245,255,0.8)', size:9, family:'IBM Plex Mono'},
+     hovertemplate:'<b>%{x}</b><br>Premium Rate: %{y}%<extra></extra>'},
+
+  ], BASE_LAYOUT({
+    barmode:'group',
+    yaxis:{...BASE_LAYOUT().yaxis, title:{text:'B / M THB', font:{size:10,color:C.muted}}},
+    yaxis2:{overlaying:'y', side:'right', showgrid:false, ticksuffix:'%', tickfont:{size:10,color:C.muted},
+            title:{text:'Percentage (%)', font:{size:10,color:C.muted}}},
+    shapes:[
+      {type:'line',xref:'paper',yref:'y2',x0:0,x1:1,y0:267,y1:267, line:{color:'rgba(255,159,67,0.55)',width:1.5,dash:'dashdot'}},
+      {type:'line',xref:'paper',yref:'y2',x0:0,x1:1,y0:401,y1:401, line:{color:'rgba(255,77,166,0.55)',width:1.5,dash:'dash'}},
+    ],
+    annotations:[
+      {xref:'paper',yref:'y2',x:1.02,y:267,text:'2Y Avg 267%',showarrow:false,font:{size:9,color:C.orange},xanchor:'left'},
+      {xref:'paper',yref:'y2',x:1.02,y:401,text:'5Y Avg 401%',showarrow:false,font:{size:9,color:C.pink},xanchor:'left'},
+    ],
+    margin:{t:30,b:60,l:60,r:100},
+  }), CFG);
+}
+
+// ─── CHART: TREND ─────────────────────────────────────────────────────────
+function drawTrend(){
+  const lr = [0,0,2389,0,1460];
+  Plotly.newPlot('chart-trend',[
+    {name:'Annual Loss Ratio', type:'scatter', mode:'lines+markers',
+     x:ANN_YRS, y:lr,
+     fill:'tozeroy', fillcolor:'rgba(255,77,166,0.07)',
+     line:{color:C.pink, width:3, shape:'spline'},
+     marker:{size:11, color:lr.map(v=>v>500?C.pink:'rgba(255,77,166,0.4)'), symbol:'diamond', line:{color:C.pink,width:2}},
+     text:lr.map(v=>v>0?v+'%':'0%'), textposition:'top center',
+     textfont:{color:C.pink, size:11, family:'IBM Plex Mono'},
+     hovertemplate:'<b>%{x}</b><br>LR: %{y:.0f}%<extra></extra>'},
+    {name:'2Y Avg Benchmark (267%)', type:'scatter', mode:'lines',
+     x:ANN_YRS, y:Array(5).fill(267),
+     line:{color:C.orange, width:2, dash:'dashdot'}, hoverinfo:'skip'},
+    {name:'5Y Avg Benchmark (401%)', type:'scatter', mode:'lines',
+     x:ANN_YRS, y:Array(5).fill(401),
+     line:{color:C.pink, width:2, dash:'dash', opacity:0.7}, hoverinfo:'skip'},
+  ], BASE_LAYOUT({
+    yaxis:{...BASE_LAYOUT().yaxis, ticksuffix:'%', title:{text:'Loss Ratio (%)',font:{size:10,color:C.muted}}},
+    margin:{t:20,b:50,l:70,r:30},
+  }), CFG);
+}
+
+// ─── CHART: PREMIUM RATE ──────────────────────────────────────────────────
+function drawPremRate(){
+  const pr = [0.03,0.04,0.03,0.17,0.04];
+  Plotly.newPlot('chart-premrate',[
+    {name:'Premium Rate', type:'scatter', mode:'lines+markers',
+     x:ANN_YRS, y:pr,
+     fill:'tozeroy', fillcolor:'rgba(0,245,255,0.07)',
+     line:{color:C.cyan, width:2.5, shape:'spline'},
+     marker:{size:8, color:C.cyan},
+     text:pr.map(v=>v.toFixed(2)+'%'), textposition:'top center',
+     textfont:{color:'rgba(0,245,255,0.8)',size:10,family:'IBM Plex Mono'},
+     hovertemplate:'<b>%{x}</b><br>Rate: %{y:.2f}%<extra></extra>'},
+    {name:'2Y Avg (0.10%)', type:'scatter', mode:'lines',
+     x:ANN_YRS, y:Array(5).fill(0.10), line:{color:C.orange,width:1.5,dash:'dashdot'}, hoverinfo:'skip'},
+    {name:'5Y Avg (0.08%)', type:'scatter', mode:'lines',
+     x:ANN_YRS, y:Array(5).fill(0.08), line:{color:C.pink,width:1.5,dash:'dash'}, hoverinfo:'skip'},
+  ], BASE_LAYOUT({
+    yaxis:{...BASE_LAYOUT().yaxis, ticksuffix:'%', title:{text:'Premium Rate (%)',font:{size:10,color:C.muted}}},
+    margin:{t:20,b:50,l:65,r:20},
+  }), CFG);
+}
+
+// ─── CHART: CLAIM VS PREMIUM ──────────────────────────────────────────────
+function drawClaimVsPrem(){
+  const ap=[1,2,2,14,3], cl=[0,0,41,0,47];
+  Plotly.newPlot('chart-claimvsprem',[
+    {name:'Annual Premium', type:'bar', x:ANN_YRS, y:ap,
+     marker:{color:'rgba(0,245,255,0.55)', line:{color:C.cyan,width:1}},
+     hovertemplate:'<b>%{x}</b><br>Premium: %{y}M THB<extra></extra>'},
+    {name:'Claim', type:'bar', x:ANN_YRS, y:cl,
+     marker:{color:cl.map(v=>v>0?'rgba(255,77,166,0.8)':'rgba(255,77,166,0.12)'), line:{color:'rgba(255,77,166,0.4)',width:1}},
+     hovertemplate:'<b>%{x}</b><br>Claim: %{y}M THB<extra></extra>'},
+  ], BASE_LAYOUT({barmode:'group',margin:{t:20,b:50,l:55,r:20}}), CFG);
+}
+
+// ─── CHART: LOC LOSS RATIO ────────────────────────────────────────────────
+function drawLocLR(){
+  const sorted = [...LOCS].sort((a,b)=>b.lr-a.lr);
+  const names  = sorted.map(l=>l.n);
+  const lrs    = sorted.map(l=>l.lr);
+  const colors = sorted.map(l=>l.risk==='danger'?C.pink:l.risk==='warn'?C.orange:'rgba(44,44,120,0.8)');
+
+  Plotly.newPlot('chart-loc-lr',[{
+    type:'bar', orientation:'h', x:lrs, y:names,
+    marker:{color:colors, line:{color:'rgba(0,245,255,0.2)',width:1}},
+    text:lrs.map(v=>v>0?v.toFixed(0)+'%':'0%'), textposition:'outside',
+    textfont:{color:C.text, size:10, family:'IBM Plex Mono'},
+    hovertemplate:'<b>%{y}</b><br>Avg LR: %{x:.1f}%<extra></extra>',
+  }], BASE_LAYOUT({
+    xaxis:{...BASE_LAYOUT().xaxis, ticksuffix:'%', title:{text:'Loss Ratio (%)',font:{size:10,color:C.muted}}},
+    margin:{t:20,b:50,l:85,r:100},
+    shapes:[{type:'line',xref:'x',yref:'paper',x0:500,x1:500,y0:0,y1:1, line:{color:'rgba(255,77,166,0.4)',width:2,dash:'dash'}}],
+    annotations:[{xref:'x',yref:'paper',x:500,y:1.02,text:'⚠ Critical 500%',showarrow:false,font:{size:10,color:C.pink},xanchor:'center'}],
+  }), CFG);
+}
+
+// ─── CHART: SMALL MULTIPLES ───────────────────────────────────────────────
+function drawSmallMultiples(){
+  const locs = Object.keys(LOC_YLR);
+  const cols = 3, rows = Math.ceil(locs.length/cols);
+  const traces = [], annotations = [];
+
+  const axStyle = {
+    gridcolor:'rgba(0,245,255,0.05)',
+    linecolor:'rgba(0,245,255,0.1)',
+    zeroline:false, showticklabels:true,
+    tickfont:{size:7,color:C.muted},
+  };
+
+  const layout = {
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    font:{family:'Sarabun,sans-serif',color:C.text,size:10},
+    grid:{rows,columns:cols,pattern:'independent',roworder:'top to bottom',xgap:0.12,ygap:0.18},
+    annotations,
+    margin:{t:50,b:30,l:45,r:20},
+    showlegend:false,
+    hoverlabel:{bgcolor:'#1C1C4E',bordercolor:C.cyan,font:{family:'IBM Plex Mono',size:11,color:'#fff'}},
+  };
+
+  locs.forEach((loc,i)=>{
+    const vals = LOC_YLR[loc];
+    const colors = vals.map(v=>
+      v===null?'rgba(0,0,0,0)':v>2000?C.pink:v>500?C.orange:v>0?C.yellow:'rgba(44,44,120,0.6)'
+    );
+    const xk = i===0?'xaxis':'xaxis'+(i+1);
+    const yk = i===0?'yaxis':'yaxis'+(i+1);
+    const xa = i===0?'x':'x'+(i+1);
+    const ya = i===0?'y':'y'+(i+1);
+
+    traces.push({
+      type:'bar', x:ANN_YRS, y:vals.map(v=>v===null?0:v),
+      marker:{color:colors, line:{color:'rgba(0,245,255,0.1)',width:1}},
+      xaxis:xa, yaxis:ya, showlegend:false,
+      hovertemplate:'<b>'+loc+'</b> %{x}<br>LR: %{y:.0f}%<extra></extra>',
+    });
+
+    const locObj = LOCS.find(l=>l.n===loc);
+    const titleColor = locObj?.risk==='danger'?C.pink:locObj?.risk==='warn'?C.orange:C.cyan;
+
+    annotations.push({
+      xref:xa+' domain', yref:ya+' domain',
+      x:0.5, y:1.18, showarrow:false,
+      text:'<b>'+loc+'</b>',
+      font:{size:11,color:titleColor},
+      xanchor:'center',
+    });
+
+    layout[xk]={...axStyle,tickangle:-40};
+    layout[yk]={...axStyle,ticksuffix:'%'};
+  });
+
+  Plotly.newPlot('chart-small-multiples', traces, layout, CFG);
+}
+
+// ─── CHART: LOC SI & PR ──────────────────────────────────────────────────
+function drawLocSIPR(){
+  const names = LOCS.map(l=>l.n);
+  const si    = LOCS.map(l=>+(l.si/1e6).toFixed(1));
+  const pr    = LOCS.map(l=>l.rate||0);
+  const clrs  = LOCS.map(l=>l.risk==='danger'?C.pink:l.risk==='warn'?C.orange:'rgba(0,245,255,0.55)');
+
+  Plotly.newPlot('chart-loc-si',[{
+    type:'bar', x:names, y:si, marker:{color:clrs},
+    text:si.map(v=>v+'M'), textposition:'outside',
+    textfont:{color:C.text,size:9,family:'IBM Plex Mono'},
+    hovertemplate:'<b>%{x}</b><br>Avg SI: %{y}M THB<extra></extra>',
+  }], BASE_LAYOUT({
+    yaxis:{...BASE_LAYOUT().yaxis,title:{text:'M THB',font:{size:10,color:C.muted}}},
+    margin:{t:30,b:65,l:55,r:20},
+    xaxis:{...BASE_LAYOUT().xaxis,tickangle:-35},
+  }), CFG);
+
+  Plotly.newPlot('chart-loc-pr',[{
+    type:'bar', x:names, y:pr, marker:{color:clrs},
+    text:pr.map(v=>v>0?v.toFixed(4)+'%':'N/A'), textposition:'outside',
+    textfont:{color:C.text,size:9,family:'IBM Plex Mono'},
+    hovertemplate:'<b>%{x}</b><br>Rate: %{y:.4f}%<extra></extra>',
+  }], BASE_LAYOUT({
+    yaxis:{...BASE_LAYOUT().yaxis,ticksuffix:'%',title:{text:'Premium Rate (%)',font:{size:10,color:C.muted}}},
+    margin:{t:30,b:65,l:60,r:20},
+    xaxis:{...BASE_LAYOUT().xaxis,tickangle:-35},
+  }), CFG);
+}
+
+// ─── LOCATION CARDS ───────────────────────────────────────────────────────
+function buildLocCards(){
+  const c = document.getElementById('loc-cards');
+  LOCS.forEach(l=>{
+    const d = document.createElement('div');
+    d.className = 'loc-card '+(l.risk||'');
+    const badge = l.risk==='danger'?'🔴 CRITICAL':l.risk==='warn'?'🟠 HIGH':'🟢 NORMAL';
+    const bclass = l.risk==='danger'?'danger':l.risk==='warn'?'warn':'ok';
+    d.innerHTML=`
+      <span class="loc-badge ${bclass}">${badge}</span>
+      <div class="loc-name">${l.n}</div>
+      <div class="loc-lr">${l.lr>0?l.lr.toFixed(0)+'%':'0%'}</div>
+      <div class="loc-meta">Avg LR (3Y) &nbsp;·&nbsp; SI ${(l.si/1e6).toFixed(0)}M THB</div>
+      <div class="loc-meta">Claim: ${l.claim>0?(l.claim/1e6).toFixed(1)+'M THB':'—'}</div>
+    `;
+    c.appendChild(d);
+  });
+}
+
+// ─── TABLES ───────────────────────────────────────────────────────────────
+function buildTables(){
+  const rows=[
+    ['2021/2022',3,1,0,0,0.03],
+    ['2022/2023',5,2,0,0,0.04],
+    ['2023/2024',5,2,41,2389,0.03],
+    ['2024/2025',9,14,0,0,0.17],
+    ['2025/2026',9,3,47,1460,0.04],
+  ];
+  const tb = document.getElementById('table-body');
+  rows.forEach(([yr,si,ap,cl,lr,pr])=>{
+    const s = lr>500?'<span class="badge danger">Critical</span>':lr>0?'<span class="badge warn">Active</span>':'<span class="badge ok">Normal</span>';
+    tb.innerHTML+=`<tr>
+      <td>${yr}</td><td>${si}B THB</td><td>${ap}M</td>
+      <td style="color:${cl>0?C.pink:C.muted}">${cl>0?cl+'M':'—'}</td>
+      <td style="color:${lr>500?C.pink:lr>0?C.orange:C.cyan}">${lr>0?lr+'%':'0%'}</td>
+      <td>${pr.toFixed(2)}%</td><td>${s}</td>
+    </tr>`;
+  });
+  [['ย้อนหลัง 2 ปี',17,18,47,267,0.10],['ย้อนหลัง 5 ปี',26,21,93,401,0.08]].forEach(([yr,si,ap,cl,lr,pr])=>{
+    tb.innerHTML+=`<tr class="summary"><td>${yr}</td><td>${si}B</td><td>${ap}M</td><td>${cl}M</td><td>${lr}%</td><td>${pr.toFixed(2)}%</td><td>—</td></tr>`;
+  });
+
+  const ltb = document.getElementById('table-loc-body');
+  LOCS.forEach(l=>{
+    const rb = l.risk==='danger'?'<span class="badge danger">Critical</span>':l.risk==='warn'?'<span class="badge warn">High</span>':'<span class="badge ok">Normal</span>';
+    ltb.innerHTML+=`<tr>
+      <td>${l.n}</td>
+      <td>${(l.si/1e6).toFixed(1)}M</td>
+      <td>${(l.prem/1e3).toFixed(0)}K</td>
+      <td>${l.rate?l.rate.toFixed(4)+'%':'N/A'}</td>
+      <td style="color:${l.claim>0?C.pink:C.muted}">${l.claim>0?(l.claim/1e6).toFixed(1)+'M':'—'}</td>
+      <td style="color:${l.lr>500?C.pink:l.lr>0?C.orange:C.cyan}">${l.lr>0?l.lr.toFixed(1)+'%':'0%'}</td>
+      <td>${rb}</td>
+    </tr>`;
+  });
+}
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────────────
+const done = {};
+function switchTab(name, btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+
+  if(!done[name]){
+    if(name==='trend'){drawTrend();drawPremRate();drawClaimVsPrem();}
+    if(name==='location'){drawLocLR();drawSmallMultiples();drawLocSIPR();}
+    if(name==='data'){buildTables();}
+    done[name]=true;
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  buildLocCards();
+  drawMain();
+  done.overview=true;
+});
+</script>
+</body>
+</html>
